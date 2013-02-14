@@ -1,0 +1,19 @@
+DROP PROCEDURE IF EXISTS spGetTopBrews;
+
+DELIMITER //
+	CREATE PROCEDURE spGetTopBrews(
+
+	)
+	BEGIN
+		
+		select b.id as brew_id, b.name as brew_name, b2.name as brewery, (select remaining from place_brew_session where place_brew_id = brew_id order by last_check_in desc limit 1) as remaining, count(*) as session_count from brew b
+			inner join place_brew pb on b.id = pb.brew_id
+			inner join place_brew_session pbs on pb.id = pbs.place_brew_id
+			inner join brewery b2 on b2.id = b.brewery_id
+		group by brew_id, brew_name, brewery
+		order by session_count desc, remaining desc
+		LIMIT 10;
+		
+	END //
+DELIMITER ;
+

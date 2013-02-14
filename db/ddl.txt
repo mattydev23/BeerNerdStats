@@ -1,0 +1,88 @@
+
+DROP TABLE IF EXISTS place_brew_check ;
+DROP TABLE IF EXISTS place_brew_session ;
+DROP TABLE IF EXISTS place_brew ;
+DROP TABLE IF EXISTS brew ;
+DROP TABLE IF EXISTS brewery ;
+DROP TABLE IF EXISTS place ;
+
+CREATE TABLE place
+(
+	id int AUTO_INCREMENT,
+	name varchar(200),
+	PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX place_U
+ON place (name);
+
+
+CREATE TABLE brewery
+(
+	id int AUTO_INCREMENT,
+	name varchar(200),
+	location varchar(255) null,
+	PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX brewery_U
+ON brewery (name);
+
+CREATE TABLE brew
+(
+	id int AUTO_INCREMENT,
+	brewery_id int,
+	name varchar(255),
+	colour varchar(20) null,
+  description text null,
+  general_style varchar(100) null,
+  general_style_colour varchar(20) null,
+  ibu int null,
+	abv float null,
+  price float null,
+  specific_style varchar(100) null,
+  specific_style_colour varchar(20) null,
+	notes text null,
+	PRIMARY KEY (id),
+	FOREIGN KEY (brewery_id) REFERENCES brewery(id)
+);
+
+CREATE UNIQUE INDEX brew_U
+ON brew (brewery_id, name);
+
+CREATE TABLE place_brew
+(
+	id int AUTO_INCREMENT,
+	place_id int,
+	brew_id int,
+	PRIMARY KEY (id),
+	FOREIGN KEY (place_id) REFERENCES place(id),
+	FOREIGN KEY (brew_id) REFERENCES brew(id)
+);
+
+CREATE UNIQUE INDEX place_brew_U
+ON place_brew (place_id, brew_id);
+
+CREATE TABLE place_brew_session
+(
+	id bigint AUTO_INCREMENT,
+	place_brew_id int,
+	started datetime,
+	last_check_in timestamp null,
+	ended datetime null,
+	remaining double,
+	PRIMARY KEY (id),
+	FOREIGN KEY (place_brew_id) REFERENCES place_brew(id)
+);
+
+CREATE TABLE place_brew_check
+(
+	id bigint AUTO_INCREMENT,
+	place_brew_session_id int,
+	check_in timestamp,
+	remaining double,
+	PRIMARY KEY (id),
+	FOREIGN KEY (place_brew_session_id) REFERENCES place_brew_session(id)
+);
+
+INSERT INTO place (name) VALUES ('St. Augustines');

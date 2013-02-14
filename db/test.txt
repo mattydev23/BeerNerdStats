@@ -1,0 +1,8 @@
+CALL spStoreBrewData('Brewery', 'Test', 'brewbrew', 'red', 'desc', 'gs', 'gsc', 12, 4.5, 'red', 'brown', 5.3);
+
+select * from place_brew_check ;
+select * from place_brew_session ;
+select * from place_brew ;
+select * from brew ;
+select * from brewery ;
+select * from place ;

@@ -1,0 +1,14 @@
+DROP PROCEDURE IF EXISTS spDeleteSession;
+
+DELIMITER //
+	CREATE PROCEDURE spDeleteSession(
+		pbsId int
+	)
+	BEGIN
+		
+		delete from place_brew_check where place_brew_session_id = pbsId;
+		delete from place_brew_session where id = pbsId;
+		
+	END //
+DELIMITER ;
+

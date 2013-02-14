@@ -1,0 +1,101 @@
+DROP PROCEDURE IF EXISTS spGetCurrentBrewData;
+
+DELIMITER //
+	CREATE PROCEDURE spGetCurrentBrewData(
+
+	)
+	BEGIN
+		
+		CREATE TEMPORARY TABLE BrewSummary (
+			brewery_name varchar(255), 
+			brewery_location varchar(255) null, 
+			brew_name varchar(255), 
+			brew_colour varchar(20) null, 
+			brew_description text null, 
+			brew_general_style varchar(100) null, 
+			brew_general_style_colour varchar(20) null, 
+			brew_ibu int null, 
+			brew_abv float null, 
+			brew_price float  null, 
+			brew_specific_style varchar(100) null, 
+			brew_specific_style_colour varchar(20) null, 
+			brew_notes text null, 
+			place_brew_session_id int,
+			session_start timestamp null,
+			session_last_check_in datetime null,
+			session_remaining double null,
+						
+			session_last_pour datetime null,
+			session_diff_hour double null,
+			session_diff_hour2 double null,
+			session_diff_hour4 double null,
+			session_diff_hour6 double null,
+			session_diff_hour8 double null,
+			session_diff_day double null,
+			
+			session_check_in_total int null,
+			session_remaining_min double null,
+			session_remaining_max double null,
+			session_remaining_diff double null
+		);
+		
+		insert into BrewSummary
+			select 
+				b1.name, b1.location, 
+				b2.name, b2.colour, b2.description, b2.general_style, b2.general_style_colour, b2.ibu, b2.abv, b2.price, b2.specific_style, b2.specific_style_colour, b2.notes,
+				pbs.id, pbs.started, pbs.last_check_in, pbs.remaining, null, null, null, null, null, null, null, null, null, null, null
+			from brewery b1 
+				inner join brew b2 on b1.id = b2.brewery_id 
+				inner join place_brew pb on pb.place_id = 1 and b2.id = pb.brew_id 
+				inner join place_brew_session pbs on pbs.place_brew_id = pb.id 
+			order by remaining desc;
+	
+		update BrewSummary b1 set
+			session_last_pour = (
+				select check_in from place_brew_check
+				where b1.place_brew_session_id = place_brew_session_id
+				order by check_in desc
+				limit 1
+			);
+	
+		update BrewSummary b1 set
+			session_check_in_total = (
+				select count(*) from place_brew_check
+				where b1.place_brew_session_id = place_brew_session_id
+			); 
+			
+		update BrewSummary b1 set
+			session_remaining_min = (
+				select remaining from place_brew_check
+				where b1.place_brew_session_id = place_brew_session_id
+					and remaining > 0
+				order by remaining asc
+				limit 1
+			); 
+			
+		update BrewSummary b1 set
+			session_remaining_max = (
+				select remaining from place_brew_check
+				where b1.place_brew_session_id = place_brew_session_id
+				order by remaining desc
+				limit 1
+			); 
+			
+		update BrewSummary b1 set
+			session_remaining_diff = (session_remaining_max - session_remaining_min); 
+	 
+	
+		update BrewSummary b1 set
+			session_diff_hour = fnGetLastHoursDiff(b1.place_brew_session_id, 1),
+			session_diff_hour2 = fnGetLastHoursDiff(b1.place_brew_session_id, 2),
+			session_diff_hour4 = fnGetLastHoursDiff(b1.place_brew_session_id, 4),
+			session_diff_hour6 = fnGetLastHoursDiff(b1.place_brew_session_id, 6),
+			session_diff_hour8 = fnGetLastHoursDiff(b1.place_brew_session_id, 8),
+			session_diff_day = fnGetLastHoursDiff(b1.place_brew_session_id, 24);
+
+			
+		select * from BrewSummary;
+		
+	END //
+DELIMITER ;
+

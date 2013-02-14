@@ -1,0 +1,46 @@
+DROP FUNCTION IF EXISTS fnGetLastHoursDiff;
+
+DELIMITER $$ 
+
+CREATE FUNCTION fnGetLastHoursDiff (pbs_id int, hours int) 
+
+RETURNS double
+
+BEGIN 
+
+	set @count:= (
+		select COUNT(*) from place_brew_check
+		where check_in >= DATE_SUB(UTC_TIMESTAMP(),INTERVAL hours HOUR)
+			and place_brew_session_id = pbs_id
+		order by check_in desc
+		limit 1
+	);
+	
+	set @currentRemaining:=(select remaining from place_brew_session where id = pbs_id limit 1);
+	
+	set @lastRemaining:=0;
+	IF (@count > 1) THEN
+		set @lastRemaining = (
+			select remaining from place_brew_check
+			where check_in >= DATE_SUB(UTC_TIMESTAMP(),INTERVAL hours HOUR)
+				and place_brew_session_id = pbs_id
+				and remaining > @currentRemaining
+			order by check_in asc
+			limit 1
+		);
+	ELSEIF (@count = 1) THEN
+		set @lastRemaining = (
+			select remaining from place_brew_check
+			where place_brew_session_id = pbs_id
+			order by check_in desc
+			limit 1, 1
+		);
+	ELSE
+		set @lastRemaining = @currentRemaining;
+	END IF;
+
+	return @lastRemaining - @currentRemaining;
+
+END$$ 
+
+DELIMITER ;

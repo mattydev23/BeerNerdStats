@@ -1,0 +1,81 @@
+DROP PROCEDURE IF EXISTS spStoreBrewData;
+
+DELIMITER //
+	CREATE PROCEDURE spStoreBrewData(
+		IN breweryName VARCHAR(255),
+		IN breweryLocation VARCHAR(255),
+		
+		IN brewName VARCHAR(255),
+		IN brewColour VARCHAR(20),
+		IN brewDescription TEXT,
+		IN brewGeneralStyle VARCHAR(100),
+		IN brewGeneralStyleColour VARCHAR(20),
+		IN brewIBU int,
+		IN brewABV float,
+		IN brewPrice float,
+		IN brewSpecificStyle VARCHAR(100),
+		IN brewSpecificStyleColour VARCHAR(20),
+		IN brewRemaining double
+	)
+	BEGIN
+		
+		declare placeId int default 0;
+		set placeId = 1;
+		/* Hardcoded for now
+		//if not exists
+		INSERT INTO place (name) VALUES (placeName);
+		set placeId = 1
+		*/
+		
+		set @breweryId:=0;
+		INSERT IGNORE INTO brewery (name, location) VALUES (breweryName, breweryLocation);
+		
+		set @breweryId = (select id from brewery where name = breweryName limit 1);
+	
+		set @brewId:=0;
+		INSERT IGNORE INTO brew (brewery_id, name, colour, description, general_style, general_style_colour, ibu, abv, price, specific_style, specific_style_colour, notes) 
+			VALUES (@breweryId, brewName, brewColour, brewDescription, brewGeneralStyle, brewGeneralStyleColour, brewIBU, brewABV, brewPrice, brewSpecificStyle, brewSpecificStyleColour, null);
+		
+		set @brewId = (select id from brew where name = brewName and brewery_id = @breweryId limit 1);
+		
+		set @isNewBrew:= 'N';
+		IF (SELECT COUNT(*) FROM place_brew WHERE brew_id = @brewId) <= 0 THEN
+			set @isNewBrew = 'Y';
+		END IF;
+		
+		set @placeBrewId:=0;
+		INSERT IGNORE INTO place_brew (place_id, brew_id) VALUES  (placeId, @brewId);
+		set @placeBrewId = (select id from place_brew where place_id = placeId and brew_id = @brewId limit 1);
+		
+		set @placeBrewSessionLastCheck:=(select last_check_in from place_brew_session where place_brew_id = @placeBrewId order by started desc limit 1);
+		set @placeBrewSessionLastRemaining:=(select remaining from place_brew_session where place_brew_id = @placeBrewId order by started desc limit 1);
+		
+		set @isNew:= 'N';
+		
+		set @placeBrewSessionDateDiff:= DATEDIFF(@placeBrewSessionLastCheck,UTC_TIMESTAMP());
+		IF !(brewRemaining <= 0 AND @placeBrewSessionLastCheck IS NULL) THEN	
+			IF ((brewRemaining > 0 AND @placeBrewSessionLastCheck IS NULL) OR DATEDIFF(@placeBrewSessionLastCheck,UTC_TIMESTAMP()) >= 2) OR (@placeBrewSessionLastRemaining IS NOT NULL AND @placeBrewSessionLastRemaining < brewRemaining) THEN
+				INSERT INTO place_brew_session (place_brew_id, started, last_check_in, ended, remaining)
+					VALUES (@placeBrewId, UTC_TIMESTAMP(), UTC_TIMESTAMP(), null, brewRemaining);
+				set @isNew = 'Y';
+			ELSE
+				UPDATE place_brew_session SET
+					last_check_in = UTC_TIMESTAMP(),
+					remaining = brewRemaining
+				WHERE place_brew_id = @placeBrewId
+					and last_check_in = @placeBrewSessionLastCheck;
+			END IF;
+			
+			set @placeBrewSessionId:=(select id from place_brew_session where place_brew_id = @placeBrewId order by started desc limit 1);
+			set @placeBrewSessionExists:=(select 1 from place_brew_check where place_brew_session_id = @placeBrewSessionId and remaining = brewRemaining limit 1);
+			IF @placeBrewSessionId IS NOT NULL AND @placeBrewSessionExists IS NULL THEN
+				INSERT INTO place_brew_check (place_brew_session_id, check_in, remaining)	
+					VALUES(@placeBrewSessionId, UTC_TIMESTAMP(), brewRemaining);
+			END IF;
+		END IF;
+		
+		select @isNew as 'is_new', @isNewBrew as 'is_new_brew';
+		
+	END //
+DELIMITER ;
+

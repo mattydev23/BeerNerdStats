@@ -1,0 +1,24 @@
+DROP PROCEDURE IF EXISTS spGetCurrentActivity;
+
+DELIMITER //
+	CREATE PROCEDURE spGetCurrentActivity(
+
+	)
+	BEGIN
+		
+		SELECT b2.name as brewery, b.name as brew_name, pbc.place_brew_session_id, pbc.check_in, pbc.remaining, 
+			(select remaining from place_brew_check 
+			  where place_brew_session_id = pbs.id
+				 and check_in > pbc.check_in 
+				order by check_in desc limit 1) - pbc.remaining as diff
+		FROM place_brew_check pbc
+			INNER JOIN place_brew_session pbs ON pbs.id = pbc.place_brew_session_id
+			INNER JOIN place_brew pb ON pb.id = pbs.place_brew_id
+			INNER JOIN brew b ON b.id = pb.brew_id
+			INNER JOIN brewery b2 ON b2.id = b.brewery_id
+		ORDER BY pbc.check_in DESC
+		LIMIT 10;
+		
+	END //
+DELIMITER ;
+

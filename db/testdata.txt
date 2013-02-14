@@ -1,0 +1,15 @@
+
+INSERT INTO place (name) VALUES ('St. Augustines');
+
+INSERT INTO brewery (name) VALUES ('Test Brewery');
+
+
+INSERT INTO brew (place_id, brewery_id, name, location, colour, description, general_style, general_style_colour, ibu, price, specific_style, specific_style_colour) 
+	VALUES (1, 1, 'Test Brew', 'Dunno where', '#FFF000', 'Some kind of beer', 'Good Style', '#e5e5e5', 99, 4.25, 'Swell Style', '#FFFFFF');
+
+INSERT INTO brew_check (brew_id, remaining) VALUES  (1, 50.50);
+
+select * from place;
+select * from brewery;
+select * from brew;
+select * from brew_check;

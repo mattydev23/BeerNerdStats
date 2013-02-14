@@ -1,0 +1,37 @@
+DROP PROCEDURE IF EXISTS spGetDailyUsage;
+
+DELIMITER //
+	CREATE PROCEDURE spGetDailyUsage(
+		dt date
+	)
+	BEGIN
+
+		set @date:= concat(dt,' 4:00:00');
+		
+		select 
+			CONVERT_TZ(check_in, 'UTC', 'America/Vancouver') as check_in, 
+			HOUR(CONVERT_TZ(check_in, 'UTC', 'America/Vancouver')) as hour, 
+			sum(remaining) as remaining,
+			sum((select remaining from place_brew_check pbc2
+			 where id < pbc.id
+				and pbc.place_brew_session_id = pbc2.place_brew_session_id
+			 order by id desc
+			 limit 1)) as last_remaining,
+			(sum((select remaining from place_brew_check pbc2
+			 where id < pbc.id
+				and pbc.place_brew_session_id = pbc2.place_brew_session_id
+			 order by id desc
+			 limit 1)) - sum(remaining)) as diff
+		from place_brew_check pbc
+		where CONVERT_TZ(check_in, 'UTC', 'America/Vancouver') >= @date
+			and CONVERT_TZ(check_in, 'UTC', 'America/Vancouver') <= date_add(@date, INTERVAL 24 hour)
+			and remaining >= 0
+			and (select remaining from place_brew_check pbc2
+				where id < pbc.id
+					and pbc.place_brew_session_id = pbc2.place_brew_session_id
+				order by id desc
+				limit 1) >= 0
+		group by HOUR(CONVERT_TZ(check_in, 'UTC', 'America/Vancouver'));
+
+	END //
+DELIMITER ;

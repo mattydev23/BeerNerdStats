@@ -1,0 +1,53 @@
+body
+{
+	
+}
+
+h1
+{
+	font-size: 24px;
+	font-weight:bold;
+}
+
+h2
+{
+	font-size: 18px;
+	font-weight:bold;
+}
+
+h3
+{
+	font-size: 14px;
+	font-weight:bold;
+}
+
+table
+{
+	border-collapse:collapse;
+}
+
+table,th, td
+{
+	border: 1px solid lightgrey;
+	padding:2px;
+}
+
+table .maintable
+{
+	width:1100px;
+}
+
+th
+{
+	text-align:left;
+}
+
+.brew
+{
+	
+}
+
+.brewery
+{
+	font-size: 11px;
+}
