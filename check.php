@@ -8,6 +8,7 @@
 
 <?php
 
+require 'classes/sql.php';
 require 'mail.php';
 
 try
@@ -24,7 +25,7 @@ $json_a = json_decode($test, true);
 
 foreach ($json_a as $k => $v) {
 
-$con = mysql_connect("localhost", "mattymc","fXb9*dc2Tkop");
+$con = GetDbCon();
 if (!$con)
 {
 die('Could not connect: ' . mysql_error());
